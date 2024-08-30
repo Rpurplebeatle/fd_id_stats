@@ -46,8 +46,6 @@ if (is.na(file_index) || file_index < 1 || file_index > length(input_files)) {
   stop("Invalid selection. Please run the script again and enter a valid number.")
 }
 
-#input_file <- "C:/Users/hswt254jua/stat/source_tables/fd_id_24H_21_days.csv"
-
 # Read the selected data file
 input_file <- input_files[file_index]
 cat("Processing file:", input_file, "\n")
@@ -413,9 +411,9 @@ if (!is.null(anova_devices_wk3_clim_TIII)) {
   print(anova_devices_wk3_clim_TIII)
 }
 
-anova_devices_wk1_clim_poly <- aov(Count ~ Device + poly(AIRTEMP, 2) + WINDSPEED + Rain + GROUNDTEMP + AIRP, data = insecta_counts_wk1)
-anova_devices_wk2_clim_poly <- aov(Count ~ Device + poly(AIRTEMP, 2) + WINDSPEED + Rain + GROUNDTEMP + AIRP, data = insecta_counts_wk2)
-anova_devices_wk3_clim_poly <- aov(Count ~ Device + poly(AIRTEMP, 2) + WINDSPEED + GROUNDTEMP + AIRP, data = insecta_counts_wk3)
+anova_devices_wk1_clim_poly <- aov(Count ~ Ambient + poly(AIRTEMP, 2) + poly(WINDSPEED, 2) + Rain, data = insecta_counts_wk1)
+anova_devices_wk2_clim_poly <- aov(Count ~ Ambient + poly(AIRTEMP, 2) + poly(WINDSPEED, 2) + Rain, data = insecta_counts_wk2)
+anova_devices_wk3_clim_poly <- aov(Count ~ Ambient + poly(AIRTEMP, 2) + poly(WINDSPEED, 2), data = insecta_counts_wk3)
 
 anova_devices_wk1_clim_poly_TIII <- perform_anova_TIII(anova_devices_wk1_clim_poly)
 anova_devices_wk2_clim_poly_TIII <- perform_anova_TIII(anova_devices_wk2_clim_poly)

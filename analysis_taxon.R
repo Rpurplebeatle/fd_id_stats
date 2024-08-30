@@ -106,6 +106,7 @@ if (!dir.exists(output_dir)) {
 
 output_file_order_prob_plot <- file.path(output_dir, paste0(output_prefix, "_order_prob_plot.png"))
 output_file_order_pie_plot <- file.path(output_dir, paste0(output_prefix, "_order_pie_plot.png"))
+output_file_order_pie_plot_diptera <- file.path(output_dir, paste0(output_prefix, "_order_pie_plot_diptera.png"))
 #output_file_x2_plot <- file.path(output_dir, paste0(output_prefix, "_x2_plot.png"))
 #output_file_x3_plot <- file.path(output_dir, paste0(output_prefix, "_x3_plot.png")) 
 
@@ -223,7 +224,7 @@ print(order_data)
 plot1 <- ggplot(order_data, aes(x = "", y = Percentage, fill = Order)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
-  labs(title = paste("Order Taxon Distribution for", selected_device_name),, x = "", y = "") +
+  labs(title = paste("Order Taxon Distribution without Diptera for", selected_device_name),, x = "", y = "") +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   theme(legend.title = element_blank()) +
@@ -235,6 +236,47 @@ print(plot1)
 
 # Save the pie chart as an image
 ggsave(output_file_order_pie_plot, plot = plot1, width = 8, height = 6)
+
+cat("Results saved in:", output_dir, "\n")
+
+############
+
+# Define the taxons of interest
+taxons_of_interest2 <- c("#N/C","Diptera", "Coleoptera", "Dermaptera", "Hemiptera", "Hymenoptera", "Lepidoptera", "Orthoptera", "Pterygota", "Neuroptera")
+
+
+# Filter the data for Class 'Insecta'
+order_data2 <- data %>%
+  filter(Order %in% taxons_of_interest2) %>%
+  group_by(Order) %>%
+  summarise(Count = n(), .groups = "drop")
+
+# Calculate the total count of all specified taxons
+count <- sum(order_data2$Count)
+
+# Calculate the percentage for each taxon
+order_data2 <- order_data2 %>%
+  mutate(Percentage = (Count / count) * 100)
+
+# View the resulting pivot table with percentages
+print(order_data2)
+
+# Create the pie chart
+plot2 <- ggplot(order_data2, aes(x = "", y = Percentage, fill = Order)) +
+  geom_bar(stat = "identity", width = 1) +
+  coord_polar("y", start = 0) +
+  labs(title = paste("Order Taxon Distribution for", selected_device_name),, x = "", y = "") +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
+  theme(legend.title = element_blank()) +
+  scale_fill_manual(values = order_colors) +
+  geom_text_repel(aes(label = paste0(round(Percentage, 1), "%")), position = position_stack(vjust = 0.5), box.padding = 0.5, point.padding = 0.5, segment.color = 'grey50')
+
+# Print the pie chart
+print(plot2)
+
+# Save the pie chart as an image
+ggsave(output_file_order_pie_plot_diptera, plot = plot1, width = 8, height = 6)
 
 cat("Results saved in:", output_dir, "\n")
 

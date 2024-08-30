@@ -100,7 +100,8 @@ output_file_counts <- file.path(output_dir, paste0(output_prefix, "_insecta_coun
 output_file_devices_insecta_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_plot.png"))
 output_file_devices_syrphoidea_plot <- file.path(output_dir, paste0(output_prefix, "_devices_syrphoidea_plot.png"))
 output_file_chi_square <- file.path(output_dir, paste0(output_prefix, "_chi_square.csv"))
-output_file_box_plot <- file.path(output_dir, paste0(output_prefix, "_insecta_box_plot.png"))
+output_file_devices_insecta_tukey_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_tukey_plot.png"))
+output_file_devices_insecta_box_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_box_plot.png"))
 
 #######
 
@@ -118,20 +119,6 @@ insecta_data <- insecta_data %>%
 insecta_counts_device_type <- as.data.frame(table(insecta_data$Device_type, insecta_data$Ambient))
 names(insecta_counts_device_type) <- c("Device_type", "Ambient", "Count")
 
-# Create a contingency table for 'Insecta'
-insecta_table <- table(insecta_data$Device_type, insecta_data$Ambient)
-print(insecta_table)
-
-# Perform Chi-square test of independence for 'Insecta'
-insecta_test_result <- chisq.test(insecta_table)
-
-# Print the result for 'Insecta'
-print(insecta_test_result)
-
-# Filter the data for Superfamily == 'Syrphoidea'
-syrphoidea_data <- data %>%
-  filter(Superfamily == 'Syrphoidea')
-
 # Create a bar plot
 plot1_chi <- ggplot(insecta_counts_device_type, aes(x = Device_type, y = Count, fill = Ambient)) +
   geom_bar(stat = "identity", position = "dodge") +
@@ -147,6 +134,10 @@ print(plot1_chi)
 ggsave(output_file_devices_insecta_plot, plot = plot1_chi, width = 8, height = 6)
 
 #######
+
+# Filter the data for Superfamily == 'Syrphoidea'
+syrphoidea_data <- data %>%
+  filter(Superfamily == 'Syrphoidea')
 
 # Create a dataframe with the Syrphoidea counts for each combination of Device_type and Ambient
 syrphoidea_counts <- as.data.frame(table(syrphoidea_data$Device_type, syrphoidea_data$Ambient))
@@ -178,6 +169,16 @@ ggsave(output_file_devices_syrphoidea_plot, plot = plot2_chi, width = 8, height 
 
 #######
 
+# Create a contingency table for 'Insecta'
+insecta_table <- table(insecta_data$Device_type, insecta_data$Ambient)
+print(insecta_table)
+
+# Perform Chi-square test of independence for 'Insecta'
+insecta_test_result <- chisq.test(insecta_table)
+
+# Print the result for 'Insecta'
+print(insecta_test_result)
+
 # Save the Chi-square test results to a CSV file with significance asterisks
 chi_square_results <- data.frame(
   Test = c("Insecta", "Syrphoidea"),
@@ -201,6 +202,67 @@ write.csv(chi_square_results, output_file_chi_square, row.names = FALSE)
 
 #######
 
+# Create a combined column for Device_type and Ambient
+insecta_data <- insecta_data %>%
+  mutate(Device_Ambient = paste(Device_type, Ambient, sep = ":"))
+
+# Count the number of 'Insecta' for each combined Device_Ambient
+insecta_counts_device_ambient <- insecta_data %>%
+  group_by(DateTime, Day, Week, Device_Ambient) %>%
+  summarise(Count = n(), .groups = "drop")
+
+# Fit a three-way ANOVA model with interactions
+anova_device_ambient <- aov(Count ~ Device_Ambient, data = insecta_counts_device_ambient)
+summary(anova_device_ambient)
+
+# Perform Tukey's HSD test for the interaction term
+tukey_device_ambient <- TukeyHSD(anova_device_ambient, "Device_Ambient")
+print(tukey_device_ambient)
+
+# Create a data frame with the p-values
+tukey_p_values <- tukey_device_ambient$Device_Ambient[, "p adj"]
+names(tukey_p_values) <- rownames(tukey_device_ambient$Device_Ambient)
+print(tukey_p_values)
+
+# Extract the results and create a compact letter display for the interaction term
+letters_tukey_device_ambient <- multcompLetters(tukey_p_values, threshold = 0.05)$Letters
+
+# Create a table with factors, mean, standard deviation, and compact letter display
+dt_device_ambient <- insecta_counts_device_ambient %>%
+  group_by(Device_Ambient) %>%
+  summarise(w = mean(Count), sd = sd(Count)) %>%
+  arrange(desc(w))
+
+# Convert the compact letter display to a data frame
+cld_tukey_device_ambient <- data.frame(Device_Ambient = names(letters_tukey_device_ambient), 
+                                       cld_tukey_device_ambient = letters_tukey_device_ambient)
+
+# Merge the compact letter display with dt_device_ambient
+dt_device_ambient <- dt_device_ambient %>%
+  left_join(cld_tukey_device_ambient, by = "Device_Ambient")
+            
+# Extract the results and create a compact letter display for the interaction term
+letters_tukey_device_ambient <- multcompLetters(tukey_p_values, threshold = 0.05)$Letters
+
+# Visualize the data with bar plots and letters for FAIR-D devices
+plot0_device_type <- ggplot(dt_device_ambient, aes(x = Device_Ambient, y = w, fill = Device_Ambient)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
+  geom_text(aes(label = cld_tukey_device_ambient, y = w + sd), vjust = -0.5) +
+  labs(x = "Device Type and Ambient", y = "Average Insecta Count") +
+  scale_fill_manual(values = c("FAIRD:Maize" = "gold", "FAIRD:Meadow" = "yellowgreen", "ID:Maize" = "orange", "ID:Meadow" = "olivedrab")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
+  ggtitle("Comparison of Insecta Counts by Device Type and Ambient with Tukey HSD Letters")
+
+print(plot0_device_type)
+
+# Save the plot as an image
+ggsave(output_file_devices_insecta_tukey_plot, plot = plot0_device_type, width = 8, height = 6)
+
+
+##########
+
 # Count the number of 'Insecta' for each Ambient based on the selection
 insecta_counts_box <- data %>%
   filter(Device_type != 0) %>%
@@ -217,23 +279,34 @@ posthoc_result <- dunn.test(insecta_counts_box$Count, interaction(insecta_counts
 p_values <- posthoc_result$P.adjusted
 names(p_values) <- posthoc_result$comparisons
 
+# Function to transform p-value names to Tukey format
+transform_p_value_names <- function(p_value_names) {
+  sapply(p_value_names, function(name) {
+    parts <- strsplit(name, " - ")[[1]]
+    parts <- gsub("\\.", ":", parts)
+    paste(parts[2], parts[1], sep = "-")
+  })
+}
+
+# Transform the names of p_values
+names(p_values) <- transform_p_value_names(names(p_values))
+print(names(p_values))
+
 # Generate the letters
 letters <- multcompLetters(p_values, threshold = 0.05)$Letters
-
-# Ensure Device_type and Ambient are factors
-insecta_counts_box$Ambient <- as.factor(insecta_counts_box$Ambient)
-insecta_counts_box$Device_type <- as.factor(insecta_counts_box$Device_type)
-
-# Check the levels of Device_type and Ambient
-device_levels <- levels(insecta_counts_box$Device_type)
-ambient_levels <- levels(insecta_counts_box$Ambient)
+print(letters)
 
 # Create a data frame for the letters
 letter_df <- data.frame(
-  Device_type = rep(device_levels, each = length(ambient_levels)),
-  Ambient = rep(ambient_levels, times = length(device_levels)),
-  Letters = letters[1:(length(device_levels) * length(ambient_levels))]
+  Device_Ambient = names(letters),
+  Letters = letters
 )
+
+# Separate the Device_Ambient column into Device_type and Ambient
+letter_df <- letter_df %>%
+  separate(Device_Ambient, into = c("Device_type", "Ambient"), sep = ":")
+
+print(letter_df)
 
 # Create the box plot with letters and facet_wrap without facet labels
 plot0_box <- ggplot(insecta_counts_box, aes(x = Device_type, y = Count, fill = Ambient)) +
@@ -241,18 +314,18 @@ plot0_box <- ggplot(insecta_counts_box, aes(x = Device_type, y = Count, fill = A
   labs(x = "Device Type", y = "Count", fill = "Ambient") +
   scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen")) +
   theme_minimal() +
-  ggtitle(paste("Distribution of Insecta Counts for", selected_device_name, "by Ambient\n Kruskal-Wallis p-value:", format(kruskal_result$p.value, digits = 3))) + 
+  ggtitle(paste("Distribution of Insecta Counts for", selected_device_name, "by Ambient\n Kruskal-Wallis p-value:", format(kruskal_result$p.value, digits = 3), "- Dunn Test for Letters")) +  
   theme(plot.title = element_text(hjust = 0.5, lineheight = 1.2),  # Center the title and adjust line height
         strip.background = element_blank(),  # Remove the strip background
         strip.text.x = element_blank()) +  # Remove the strip text
   geom_text(data = letter_df, aes(x = Device_type, y = max(insecta_counts_box$Count) + 10, label = Letters), 
-            vjust = -0.2, position = position_dodge(width = 0.9)) +
+            vjust = -0.2, position = position_dodge(width = 0.9), fontface = "plain") +
   facet_wrap(~ Ambient)
 
 print(plot0_box)
 
 # Save the plot as an image
-ggsave(output_file_box_plot, plot = plot0_box, width = 8, height = 6)
+ggsave(output_file_devices_insecta_box_plot, plot = plot0_box, width = 8, height = 6)
 
 
 cat("Results saved in:", output_dir, "\n")
