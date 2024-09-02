@@ -224,7 +224,7 @@ print(order_data)
 plot1 <- ggplot(order_data, aes(x = "", y = Percentage, fill = Order)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
-  labs(title = paste("Order Taxon Distribution without Diptera for", selected_device_name),, x = "", y = "") +
+  labs(title = paste("Order Taxon Distribution without Diptera for", selected_device_name), x = "", y = "") +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   theme(legend.title = element_blank()) +
@@ -265,7 +265,7 @@ print(order_data2)
 plot2 <- ggplot(order_data2, aes(x = "", y = Percentage, fill = Order)) +
   geom_bar(stat = "identity", width = 1) +
   coord_polar("y", start = 0) +
-  labs(title = paste("Order Taxon Distribution for", selected_device_name),, x = "", y = "") +
+  labs(title = paste("Order Taxon Distribution for", selected_device_name), x = "", y = "") +
   theme_void() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   theme(legend.title = element_blank()) +

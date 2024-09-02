@@ -372,6 +372,8 @@ ggsave(output_file_scatter_ambient_plot, plot = plot3_device, width = 8, height 
 
 #######
 
+#browser()
+
 # Fit a three-way ANOVA model with interactions
 #anova_devices_wk1_clim <- aov(Count ~ Ambient + AIRTEMP + WINDSPEED + Rain + RAD + GROUNDTEMP + RH + AIRP, data = insecta_counts_wk1)
 #anova_devices_wk2_clim <- aov(Count ~ Ambient + AIRTEMP + WINDSPEED + Rain + RAD + GROUNDTEMP + RH + AIRP, data = insecta_counts_wk2)
