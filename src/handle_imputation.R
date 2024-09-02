@@ -49,7 +49,7 @@ handle_imputation <- function() {
       results_dir <<- "results"
       output_dir <<- file.path(results_dir, output_prefix, "_id_imputed")
       output_sufix <<- if (device_type_selection == 3) {
-        "fd_id"
+        "FAIRD&ID"
       } else {
         selected_device
       }

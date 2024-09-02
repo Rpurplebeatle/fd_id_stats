@@ -83,7 +83,7 @@ data <- data %>%
 # Generate dynamic output file names
 output_prefix <- tools::file_path_sans_ext(basename(input_file))
 output_sufix <- if (device_type_selection == 3) {
-  "fd_id"
+  "FAIRD&ID"
 } else {
   (selected_device)
 }
