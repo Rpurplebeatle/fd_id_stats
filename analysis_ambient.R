@@ -216,6 +216,10 @@ dt_device_ambient <- dt_device_ambient %>%
 # Extract the results and create a compact letter display for the interaction term
 letters_tukey_device_ambient <- multcompLetters(tukey_p_values, threshold = 0.05)$Letters
 
+# Extract the p-value from the ANOVA summary
+anova_summary <- summary(anova_device_ambient)
+p_value <- anova_summary[[1]]["Device_Ambient", "Pr(>F)"]
+
 # Visualize the data with bar plots and letters for FAIR-D devices
 plot0_device_type <- ggplot(dt_device_ambient, aes(x = Device_Ambient, y = w, fill = Device_Ambient)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
@@ -224,8 +228,11 @@ plot0_device_type <- ggplot(dt_device_ambient, aes(x = Device_Ambient, y = w, fi
   labs(x = "Device Type and Ambient", y = "Average Insecta Count") +
   scale_fill_manual(values = c("FAIRD:Maize" = "gold", "FAIRD:Meadow" = "yellowgreen", "ID:Maize" = "orange", "ID:Meadow" = "olivedrab")) +
   theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, lineheight = 1.2),  # Center the title and adjust line height
+        strip.background = element_blank(),  # Remove the strip background
+        strip.text.x = element_blank()) +  # Remove the strip text
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
-  ggtitle("Comparison of Insecta Counts by Device Type and Ambient with Tukey HSD Letters")
+  ggtitle(paste("Comparison of Insecta Counts for", selected_device_name, "by Ambient\nTukey HSD Letters, p-value =", round(p_value, 4)))
 
 print(plot0_device_type)
 
