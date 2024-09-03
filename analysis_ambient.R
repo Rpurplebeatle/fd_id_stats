@@ -95,11 +95,8 @@ if (!dir.exists(output_dir)) {
 }
 
 
-
-output_file_counts <- file.path(output_dir, paste0(output_prefix, "_insecta_counts.csv"))
 output_file_devices_insecta_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_plot.png"))
 output_file_devices_syrphoidea_plot <- file.path(output_dir, paste0(output_prefix, "_devices_syrphoidea_plot.png"))
-output_file_chi_square <- file.path(output_dir, paste0(output_prefix, "_chi_square.csv"))
 output_file_devices_insecta_tukey_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_tukey_plot.png"))
 output_file_devices_insecta_box_plot <- file.path(output_dir, paste0(output_prefix, "_devices_insecta_box_plot.png"))
 
@@ -115,90 +112,65 @@ insecta_data <- insecta_data %>%
 
 #######
 
-# Create a dataframe with the counts for each combination of Device_type and Ambient
-insecta_counts_device_type <- as.data.frame(table(insecta_data$Device_type, insecta_data$Ambient))
-names(insecta_counts_device_type) <- c("Device_type", "Ambient", "Count")
+# Calculate the count for each observation
+insecta_counts_device_type <- insecta_data %>%
+  group_by(DateTime, Ambient, Device_type) %>%
+  summarise(Count = n()) %>%
+  ungroup()
+
+# Create a table with factors, mean, standard deviation, and total count
+dt_ambients <- insecta_counts_device_type %>%
+  group_by(Ambient, Device_type) %>%
+  summarise(mean_count = mean(Count), sd_count = sd(Count), total_count = sum(Count)) %>%
+  arrange(desc(mean_count))
 
 # Create a bar plot
-plot1_chi <- ggplot(insecta_counts_device_type, aes(x = Device_type, y = Count, fill = Ambient)) +
+plot1_ambients <- ggplot(dt_ambients, aes(x = Device_type, y = total_count, fill = Ambient)) +
   geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = total_count - sd_count, ymax = total_count + sd_count), width = 0.2, position = position_dodge(0.9)) +
+  geom_text(aes(label = total_count, y = total_count + sd_count), vjust = -0.5, position = position_dodge(0.9)) +
   labs(x = "Device Type", y = "Insecta Count", fill = "Ambient") +
   theme_minimal() +
-  scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen"))+
+  scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen")) +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts by Ambient")))
 
-print(plot1_chi)
+print(plot1_ambients)
 
 # Save the plot as an image
-ggsave(output_file_devices_insecta_plot, plot = plot1_chi, width = 8, height = 6)
+ggsave(output_file_devices_insecta_plot, plot = plot1_ambients, width = 8, height = 6)
+
 
 #######
 
-# Filter the data for Superfamily == 'Syrphoidea'
-syrphoidea_data <- data %>%
-  filter(Superfamily == 'Syrphoidea')
+# Calculate the count for each observation
+syrphoidea_counts_device_type <- insecta_data %>%
+  filter(Superfamily == 'Syrphoidea') %>%
+  group_by(DateTime, Ambient, Device_type) %>%
+  summarise(Count = n()) %>%
+  ungroup()
 
-# Create a dataframe with the Syrphoidea counts for each combination of Device_type and Ambient
-syrphoidea_counts <- as.data.frame(table(syrphoidea_data$Device_type, syrphoidea_data$Ambient))
-names(syrphoidea_counts) <- c("Device_type", "Ambient", "Count")
-
-# Create a contingency table for 'Syrphidae'
-syrphoidea_table <- table(syrphoidea_data$Device_type, syrphoidea_data$Ambient)
-print(syrphoidea_table)
-
-# Perform Chi-square test of independence for 'Syrphidae'
-syrphoidea_test_result <- chisq.test(syrphoidea_table)
-
-# Print the result for 'Syrphidae'
-print(syrphoidea_test_result)
+# Create a table with factors, mean, standard deviation, and total count
+dt_ambients_syrphoidea <- syrphoidea_counts_device_type %>%
+  group_by(Ambient, Device_type) %>%
+  summarise(mean_count = mean(Count), sd_count = sd(Count), total_count = sum(Count)) %>%
+  arrange(desc(mean_count))
 
 # Create a bar plot
-plot2_chi <- ggplot(syrphoidea_counts, aes(x = Device_type, y = Count, fill = Ambient)) +
+plot2_ambients <- ggplot(dt_ambients_syrphoidea, aes(x = Device_type, y = total_count, fill = Ambient)) +
   geom_bar(stat = "identity", position = "dodge") +
-  labs(x = "Device Type", y = "Syrphoidea Count", fill = "Ambient") +
+  geom_errorbar(aes(ymin = total_count - sd_count, ymax = total_count + sd_count), width = 0.2, position = position_dodge(0.9)) +
+  geom_text(aes(label = total_count, y = total_count + sd_count), vjust = -0.5, position = position_dodge(0.9)) +
+  labs(x = "Device Type", y = "Insecta Count", fill = "Ambient") +
   theme_minimal() +
-  scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen"))+
+  scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen")) +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
-  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Superfamily 'Syrphoidea' Counts by Ambient")))
+  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Syrphoidea Counts by Ambient")))
 
-print(plot2_chi)
+print(plot2_ambients)
 
 # Save the plot as an image
-ggsave(output_file_devices_syrphoidea_plot, plot = plot2_chi, width = 8, height = 6)
-
-#######
-
-# Create a contingency table for 'Insecta'
-insecta_table <- table(insecta_data$Device_type, insecta_data$Ambient)
-print(insecta_table)
-
-# Perform Chi-square test of independence for 'Insecta'
-insecta_test_result <- chisq.test(insecta_table)
-
-# Print the result for 'Insecta'
-print(insecta_test_result)
-
-# Save the Chi-square test results to a CSV file with significance asterisks
-chi_square_results <- data.frame(
-  Test = c("Insecta", "Syrphoidea"),
-  df = c(insecta_test_result$parameter, syrphoidea_test_result$parameter),
-  Statistic = c(insecta_test_result$statistic, syrphoidea_test_result$statistic),
-  p_value = c(insecta_test_result$p.value, syrphoidea_test_result$p.value),
-  significance = case_when(
-    c(insecta_test_result$p.value, syrphoidea_test_result$p.value) < 0.001 ~ "***",
-    c(insecta_test_result$p.value, syrphoidea_test_result$p.value) < 0.01 ~ "**",
-    c(insecta_test_result$p.value, syrphoidea_test_result$p.value) < 0.05 ~ "*",
-    TRUE ~ ""
-  )
-)
-
-print(chi_square_results)
-
-#######
-
-# Save the resulting tables to a new CSV file
-write.csv(chi_square_results, output_file_chi_square, row.names = FALSE)
+ggsave(output_file_devices_syrphoidea_plot, plot = plot2_ambients, width = 8, height = 6)
 
 #######
 

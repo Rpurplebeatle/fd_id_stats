@@ -159,6 +159,7 @@ output_file_tukey_ambient <- file.path(output_dir, paste0(output_prefix, "_tukey
 output_file_tukey_weeks <- file.path(output_dir, paste0(output_prefix, "_tukey_weeks.csv"))
 output_file_tukey_devices_plot <- file.path(output_dir, paste0(output_prefix, "_tukey_devices_plot.png"))
 output_file_tukey_ambient_plot <- file.path(output_dir, paste0(output_prefix, "_tukey_ambient_plot.png"))
+output_file_counts_weeks_plot <- file.path(output_dir, paste0(output_prefix, "_counts_weeks_plot.png"))
 output_file_tukey_weeks_plot <- file.path(output_dir, paste0(output_prefix, "_tukey_weeks_plot.png"))
 output_file_scatter_ambient_plot <- file.path(output_dir, paste0(output_prefix, "_scater_ambient_plot.png"))
 
@@ -468,7 +469,7 @@ letters_tukey_weeks <- multcompLetters4(anova_weeks, tukey_weeks)
 # Create a table with factors, mean, standard deviation, and compact letter display
 dt_weeks <- insecta_counts %>%
   group_by(Week) %>%
-  summarise(w = mean(Count), sd = sd(Count)) %>%
+  summarise(w = mean(Count), sd = sd(Count), Count = sum(Count)) %>%
   arrange(desc(w))
 
 # Extracting the compact letter display and adding to the table
@@ -481,14 +482,32 @@ plot2_device <- ggplot(dt_weeks, aes(x = Week, y = w, fill = Week)) +
   geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
   geom_text(aes(label = cld_tukey_weeks, y = w + sd), vjust = -0.5) +
   labs(x = "Week Nr.", y = "Average Insecta Count") +
+  scale_fill_manual(values = c("1" = "salmon", "2" = "limegreen", "3" = "skyblue3")) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
-  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts by Week with Tukey HSD Letters")))
+  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta average Counts by Week with Tukey HSD Letters")))
 
 print(plot2_device)
 
 # Save the plot as an image
 ggsave(output_file_tukey_weeks_plot, plot = plot2_device, width = 8, height = 6)
+
+
+# Visualize the data with bar plots and letters for FAIR-D devices
+plot3_device <- ggplot(dt_weeks, aes(x = Week, y = Count, fill = Week)) +
+  geom_bar(stat = "identity", show.legend = FALSE) +
+  geom_errorbar(aes(ymin = Count - sd, ymax = Count + sd), width = 0.2) +
+  geom_text(aes(label = Count, y = Count + sd), vjust = -0.5) +
+  labs(x = "Week Nr.", y = "Insecta Count") +
+  scale_fill_manual(values = c("1" = "salmon", "2" = "limegreen", "3" = "skyblue3")) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
+  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts")))
+
+print(plot3_device)
+
+# Save the plot as an image
+ggsave(output_file_counts_weeks_plot, plot = plot3_device, width = 8, height = 6)
 
 #######
 

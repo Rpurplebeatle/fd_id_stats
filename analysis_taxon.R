@@ -278,5 +278,65 @@ print(plot2)
 # Save the pie chart as an image
 ggsave(output_file_order_pie_plot_diptera, plot = plot1, width = 8, height = 6)
 
+###########
+# library(tidyr)
+# library(scales)
+# 
+# # Convert DateTime to Date
+# insecta_data <- insecta_data %>%
+#   mutate(Date = as.Date(DateTime))
+# 
+# # Calculate the count of each Order per Date
+# abundance_data <- insecta_data %>%
+#   group_by(Date, Order) %>%
+#   summarize(count = n()) %>%
+#   ungroup()
+# 
+# # Calculate the total count per Date
+# total_counts <- abundance_data %>%
+#   group_by(Date) %>%
+#   summarize(total_count = sum(count))
+# 
+# # Merge total counts with abundance data
+# abundance_data <- abundance_data %>%
+#   left_join(total_counts, by = "Date")
+# 
+# # Calculate proportional abundance
+# abundance_data <- abundance_data %>%
+#   mutate(proportion = count / total_count)
+# 
+# # Ensure proportions sum to 1 for each Date
+# abundance_data <- abundance_data %>%
+#   group_by(Date) %>%
+#   mutate(proportion = proportion / sum(proportion)) %>%
+#   ungroup()
+# 
+# # Calculate mean abundance for each Order
+# mean_abundance <- abundance_data %>%
+#   group_by(Order) %>%
+#   summarize(mean_proportion = mean(proportion)) %>%
+#   arrange(desc(mean_proportion))
+# 
+# # Reorder factor levels based on mean abundance
+# abundance_data$Order <- factor(abundance_data$Order, levels = mean_abundance$Order)
+# 
+# # Plot the proportional abundance over time
+# plot_abundance <- ggplot(abundance_data, aes(x = Date, y = proportion, fill = Order)) +
+#   geom_area(position = "stack") +
+#   scale_fill_manual(values = order_colors) +
+#   labs(title = "Proportional Abundance of Insect Orders Over Time",
+#        x = "Date",
+#        y = "Proportion",
+#        fill = "Insect Order") +
+#   theme_minimal() +
+#   theme(plot.title = element_text(hjust = 0.5)) +
+#   scale_x_date(date_labels = "%d-%m-%Y", date_breaks = "1 week") +
+#   scale_y_continuous(labels = percent_format())
+# 
+# print(plot_abundance)
+
+
+###########
+
 cat("Results saved in:", output_dir, "\n")
 

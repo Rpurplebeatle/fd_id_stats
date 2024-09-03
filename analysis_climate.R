@@ -158,7 +158,7 @@ insecta_counts_wk1$WINDSPEED <- as.numeric(insecta_counts_wk1$WINDSPEED)
 plot0_clim <- ggplot(summary_data, aes(x = AIRTEMP, y = WINDSPEED)) +
   stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE) +
   scale_fill_gradientn(colors = c("midnightblue","dodgerblue4", "limegreen", "yellow")) +
-  labs(title = paste("2D density plot of", selected_device_name, "Insecta Counts as function of Air Temperature and Wind Speed\n- Week 1 -"),
+  labs(title = str_wrap(paste("2D density plot of", selected_device_name, "Insecta Counts as function of Temperature and Wind Speed - Week 1 -")),
        x = "Air Temperature",
        y = "Wind Speed") +
   theme_classic() +
