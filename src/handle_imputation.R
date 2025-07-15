@@ -23,7 +23,7 @@ handle_imputation <- function() {
       
       # Count the number of 'Insecta' for each Ambient
       insecta_counts <<- insecta_data %>%
-        group_by(DateTime, Day, Week, Device, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
+        group_by(DateTime, Day, Week, Device, Device_type, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
         summarise(Count = n(), .groups = "drop")
       
       # Duplicate ID4 rows and change Device to ID3
