@@ -202,7 +202,8 @@ library(mgcv)
 insecta_counts$Devclass=factor(ifelse(grepl("FAIR",insecta_counts$Device),"FAIR","ID"))
 
 head(insecta_counts)
-xyplot(Count~DateTime,groups=Devclass,insecta_counts,type=c("p","smooth"),auto.key=list(columns=1))
+xyplot(Count~DateTime,groups=Devclass,insecta_counts,type=c("p","smooth"),
+       cex=2,pch=16,auto.key=list(columns=1))
 
 # recode DateTime:
 
