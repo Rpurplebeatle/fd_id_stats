@@ -9,13 +9,14 @@ library(agricolae)
 library(lme4)
 library(dplyr)
 library(ggplot2)
-library(here)  # Add the here package
+library(here)  
 
 
 # Use here() to define paths relative to the project root
 source(here("src/reorder_rename_anova.R"))
 source(here("src/add_significance.R"))
 source(here("src/handle_imputation.R"))
+source(here("src/custom_colors.R"))
 
 # Print the current working directory
 cat("Current working directory:", here(), "\n")
@@ -90,32 +91,35 @@ if (device_type_selection == 2 || device_type_selection == 3) {
       selected_device
     }
     
-    # Count the number of 'Insecta' for each Ambient based on the selection
-    data <- data %>%
-      filter(Device_type %in% selected_device)
-    
+    # Filter out the non selected device
+     data <- data %>%
+       filter(Device_type %in% selected_device)
+     
     # Convert DateTime column to POSIXct format
     insecta_data <- data %>%
       mutate(DateTime = ymd_hms(DateTime))
     
     # Create a binary variable for rain
-    insecta_data$Rain <- ifelse(insecta_data$PRECIPITATION > 0, 1, 0)
+    insecta_data$Rain <- ifelse(data$PRECIPITATION > 0, 1, 0)
     
-    # Count the number of 'Insecta' for each Ambient
+    # Now, summarize while preserving every weather record
     insecta_counts <- insecta_data %>%
-      group_by(DateTime, Day, Week, Device, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
-      summarise(Count = n(), .groups = "drop")
+      group_by(DateTime, Day, Week, Device_type, Device, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
+      summarise(Count = sum(Detection, na.rm = TRUE), .groups = "drop")
+    
+    
   }
 } else {
   # This block executes if device_type_selection is not 2 or 3
   output_prefix <- tools::file_path_sans_ext(basename(input_file))
   output_sufix <- selected_device
   
-    # Count the number of 'Insecta' for each Ambient based on the selection
+  # Filter out the non selected device
   data <- data %>%
     filter(Device_type %in% selected_device)
   
-  # Convert DateTime column to POSIXct format
+
+  # Convert DateTime column to POSIXct format for consistency
   insecta_data <- data %>%
     mutate(DateTime = ymd_hms(DateTime))
   
@@ -124,7 +128,7 @@ if (device_type_selection == 2 || device_type_selection == 3) {
   
   # Count the number of 'Insecta' for each Ambient
   insecta_counts <- insecta_data %>%
-    group_by(DateTime, Day, Week, Device, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
+    group_by(DateTime, Day, Week, Device, Device_type, Ambient, AIRTEMP, WINDSPEED, Rain, RAD, GROUNDTEMP, RH, AIRP) %>%
     summarise(Count = n(), .groups = "drop")
   
 }
@@ -162,6 +166,7 @@ output_file_tukey_ambient_plot <- file.path(output_dir, paste0(output_prefix, "_
 output_file_counts_weeks_plot <- file.path(output_dir, paste0(output_prefix, "_counts_weeks_plot.png"))
 output_file_tukey_weeks_plot <- file.path(output_dir, paste0(output_prefix, "_tukey_weeks_plot.png"))
 output_file_scatter_ambient_plot <- file.path(output_dir, paste0(output_prefix, "_scater_ambient_plot.png"))
+
 
 #########
 
@@ -244,7 +249,7 @@ plot0_device <- ggplot(dt_devices, aes(x = Device, y = w, fill = Device)) +
   geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
   geom_text(aes(label = cld_tukey_devices, y = w + sd), vjust = -0.5) +
   labs(x = "Device Nr.", y = "Average Insecta Count") +
-  scale_fill_manual(values = c("FAIRD1" = "gold", "FAIRD2" = "yellow", "FAIRD3" = "greenyellow", "FAIRD4" = "yellowgreen", "ID1" = "gold", "ID2" = "yellow", "ID3" = "greenyellow", "ID4" = "yellowgreen")) +
+  scale_fill_manual(values = custom_colors) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts by Device Nr. with Tukey HSD Letters")))
@@ -295,7 +300,7 @@ plot1_device <- ggplot(dt_ambient, aes(x = Ambient, y = w, fill = Ambient)) +
   geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
   geom_text(aes(label = cld_tukey_ambient, y = w + sd), vjust = -0.5) +
   labs(x = "Ambient", y = "Average Insecta Count") +
-  scale_fill_manual(values = c("Maize" = "gold", "Meadow" = "yellowgreen")) +
+  scale_fill_manual(values = custom_colors) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts by Ambient with Tukey HSD Letters"), width = 40))
@@ -312,6 +317,13 @@ library(lubridate)
 
 # Determine the minimum time difference in seconds
 min_time_diff <- as.numeric(min(diff(sort(unique(insecta_counts$DateTime)))), units = "secs")
+
+print(min_time_diff)
+
+unique_times <- sort(unique(insecta_counts$DateTime))
+print(unique_times)
+print(diff(unique_times))
+
 
 # Create a function to generate time intervals
 create_time_intervals <- function(datetime, interval) {
@@ -339,13 +351,18 @@ if (min_time_diff <= 3600) {  # 1 hour in seconds
 insecta_counts_wide <- insecta_counts_no_device %>%
   pivot_wider(names_from = Ambient, values_from = Count, values_fill = 0)
 
+
+# install.packages("ggrepel")
+library(ggrepel)
+
 # Continue with the rest of your code
 plot3_device <- ggplot(insecta_counts_wide, aes(x = Meadow, y = Maize)) +
-  geom_jitter(color = "black", width = 0.3, height = 0.3) +
+  geom_point(color = "black", width = 0.3, height = 0.3) +
   geom_smooth(method = "lm", se = FALSE, color = "dimgrey", linewidth = 1) +
-  labs(title = str_wrap(paste("Scatter Plot of", selected_device_name, "Insecta Counts: Maize vs. Meadow/n (Interval:", interval_used, ")")),
-       x = "Meadow Insecta Count",
-       y = "Maize Insecta Count") +
+  geom_text_repel(aes(label = as.character(as.Date(DateTime))), size = 3) +
+  labs(title = str_wrap(paste("Scatter Plot of", selected_device_name, "Daily Abundance: Maize vs. Meadow")),
+       x = "Meadow Daily Abundance",
+       y = "Maize Daily Abundance") +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5))  # Center the title
 
@@ -455,6 +472,9 @@ if (!is.null(anova_devices_wk3_clim_inter_TIII)) {
 
 #######
 
+# Pick the color by the user’s choice:
+color_bar <- device_colors[ as.character(device_type_selection) ]
+
 # Fit a three-way ANOVA model with interactions
 anova_weeks <- aov(Count ~Week, data = insecta_counts)
 summary(anova_weeks)
@@ -482,7 +502,7 @@ plot2_device <- ggplot(dt_weeks, aes(x = Week, y = w, fill = Week)) +
   geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
   geom_text(aes(label = cld_tukey_weeks, y = w + sd), vjust = -0.5) +
   labs(x = "Week Nr.", y = "Average Insecta Count") +
-  scale_fill_manual(values = c("1" = "salmon", "2" = "limegreen", "3" = "skyblue3")) +
+  geom_col(fill = color_bar) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
   ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta average Counts by Week with Tukey HSD Letters")))
@@ -493,16 +513,16 @@ print(plot2_device)
 ggsave(output_file_tukey_weeks_plot, plot = plot2_device, width = 8, height = 6)
 
 
-# Visualize the data with bar plots and letters for FAIR-D devices
 plot3_device <- ggplot(dt_weeks, aes(x = Week, y = Count, fill = Week)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   geom_errorbar(aes(ymin = Count - sd, ymax = Count + sd), width = 0.2) +
   geom_text(aes(label = Count, y = Count + sd), vjust = -0.5) +
-  labs(x = "Week Nr.", y = "Insecta Count") +
-  scale_fill_manual(values = c("1" = "salmon", "2" = "limegreen", "3" = "skyblue3")) +
+  labs(x = "Week Nr.", y = "Abundance") +
+  scale_y_continuous(limits = c(0, 2000)) +
+  geom_col(fill = color_bar) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5)) +  # Center the title
-  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Insecta Counts")))
+  ggtitle(str_wrap(paste("Comparison of", selected_device_name, "Abundance")))
 
 print(plot3_device)
 
@@ -510,6 +530,54 @@ print(plot3_device)
 ggsave(output_file_counts_weeks_plot, plot = plot3_device, width = 8, height = 6)
 
 #######
+
+# If both devices were selected
+if  (device_type_selection == 3) {
+  # Summarize total counts per week and Device_type
+  weekly_counts <- insecta_counts %>%
+    group_by(Week, Device_type) %>%
+    summarise(Total = sum(Count), .groups = 'drop')
+  
+  # Compute relative counts per Device_type (each bar shows the weekly share of the device total)
+  weekly_relative <- weekly_counts %>%
+    group_by(Device_type) %>%
+    mutate(Relative = Total / sum(Total))
+  
+  # Plot
+  pp1 <- ggplot(weekly_relative, aes(x = factor(Week), y = Relative, fill = Device_type)) +
+    geom_bar(stat = "identity", position = "dodge") +
+    scale_fill_manual(values = custom_colors) +
+    labs(
+      x = "Week",
+      y = "Relative Abundance (within Device type)",
+      fill = "Device type",
+      title = "Weekly Relative Insect Counts by Device Type"
+    ) +
+    scale_y_continuous(labels = scales::percent_format()) +
+    theme_minimal()
+  
+  print(pp1)
+
+  pp2 <- ggplot(insecta_counts, aes(x = Device_type, y = Count, fill = Device_type)) +
+    geom_boxplot() +
+    facet_wrap(~ Week, nrow = 1) +  # One panel per week
+    scale_fill_manual(values = custom_colors) +
+    labs(
+      x = "Device type",
+      y = "Abundance",
+      title = "Insect Count Distribution per Device Type by Week"
+    ) +
+    theme_minimal() +
+    theme(
+      strip.text = element_text(face = "bold"),  # Emphasize week labels
+      axis.text.x = element_text(angle = 45, hjust = 1)
+    )
+  
+  print(pp2)
+}
+
+
+
 
 anova_rain <- aov(Count ~ Rain, data = insecta_counts)
 summary(anova_rain)
