@@ -29,7 +29,7 @@ handle_imputation <- function() {
       # Duplicate ID4 rows and change Device to ID3
       id3_rows <<- insecta_counts %>%
         filter(Device == "ID4") %>%
-        mutate(Device = "ID3")
+        mutate(Device = "ID3",Site="Site3")
       
       # Append the new ID3 rows to insecta_counts
       insecta_counts <<- bind_rows(insecta_counts, id3_rows)
