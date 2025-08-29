@@ -233,6 +233,14 @@ print(tukey_devices)
 letters_tukey_devices <- multcompLetters4(anova_devices, tukey_devices)
 #letters_tukey_devices <- multcompLetters(tukey_devices$Device)
 
+
+insecta_counts
+
+# device types
+
+count~
+
+
 # Create a table with factors, mean, standard deviation, and compact letter display
 dt_devices <- insecta_counts %>%
   group_by(Device) %>%
@@ -244,6 +252,10 @@ cld_tukey_devices <- as.data.frame.list(letters_tukey_devices $Device)
 dt_devices$cld_tukey_devices <- cld_tukey_devices$Letters
 
 # Visualize the data with bar plots and letters for FAIR-D devices
+
+
+dt_devices
+
 plot0_device <- ggplot(dt_devices, aes(x = Device, y = w, fill = Device)) +
   geom_bar(stat = "identity", show.legend = FALSE) +
   geom_errorbar(aes(ymin = w - sd, ymax = w + sd), width = 0.2) +
