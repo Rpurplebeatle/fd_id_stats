@@ -299,15 +299,15 @@ w3 <- gam(Count ~ Site+s(Day.num,AIRTEMP,by=Device_type,bs="ts",k=20),select=T,
 # model-based plots
 library(gratia)
 # m1, the basic model without temp
-draw(m1,constant = coef(m1)[1],grouped_by=T,fun=exp)
+draw(w1,constant = coef(w1)[1],grouped_by=T,fun=exp)
 
 draw(w2,constant = coef(w2)[1],fun=exp,grouped_by=T)
 
 # now with temp:
-draw(w2a,constant = coef(w2)[1],fun=exp,select=1:2,grouped_by=T)
+draw(w2a,constant = coef(w2a)[1],fun=exp,select=1:2,grouped_by=T)
 
 #Graph on day vs. device type
-draw(w2a,constant = coef(w2)[1],fun=exp,select=3:4,grouped_by=T)
+draw(w2a,constant = coef(w2a)[1],fun=exp,select=3:4,grouped_by=T)
 
 coef(w2a)[1]
 
